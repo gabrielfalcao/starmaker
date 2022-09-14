@@ -1,3 +1,6 @@
 include LICENSE README.rst *.txt *.rst docs/source/*
+include *.tf *.j2 starmaker
+recursive-include starmaker *.tf
+recursive-include starmaker *.j2
 recursive-include docs/source *.*
 recursive-include docs/source/_static *.*

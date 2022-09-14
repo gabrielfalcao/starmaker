@@ -1,0 +1,18 @@
+{% raw %}
+terraform {
+  required_version = ">=1.2"
+  required_providers = {
+    google = {
+      source = "hashicorp/google"
+      version = "3.63.0"
+    }
+  }
+}
+
+provider "google" {
+  credentials = file("account.json")
+  project = ""
+  region = ""
+  zone = ""
+}
+{% endraw %}
