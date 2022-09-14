@@ -6,7 +6,7 @@ import os
 from setuptools import setup, find_packages
 
 
-PACKAGE_NAME = "starmaker"
+PACKAGE_NAME = "star-maker"
 MODULE_NAME = "starmaker"
 AUTHOR = "Gabriel Falcão"
 AUTHOR_EMAIL = "gabriel@nacaolivre.org"
