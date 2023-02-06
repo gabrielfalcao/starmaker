@@ -6,7 +6,7 @@ import os
 from setuptools import setup, find_packages
 
 
-PACKAGE_NAME = "star-maker"
+PACKAGE_NAME = "starmaker"
 MODULE_NAME = "starmaker"
 AUTHOR = "Gabriel Falcão"
 AUTHOR_EMAIL = "gabriel@nacaolivre.org"
@@ -42,7 +42,10 @@ setup(
     version=read_version(),
     description="some tool",
     long_description=local_file("README.rst"),
-    entry_points={"console_scripts": [f"{MODULE_NAME} = {MODULE_NAME}.cli:main"]},
+    entry_points={"console_scripts": [
+        f"{PACKAGE_NAME} = {MODULE_NAME}.cli:main",
+        f"cosmicray = {MODULE_NAME}.cli:srsync",
+    ]},
     packages=find_packages(exclude=["*tests*"]),
     include_package_data=True,
     package_data={

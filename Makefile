@@ -3,7 +3,7 @@ GIT_ROOT		:= $(shell dirname $(MAKEFILE_PATH))
 VENV_ROOT		:= $(GIT_ROOT)/.venv
 
 PACKAGE_NAME		:= starmaker
-MAIN_CLI_NAME		:= star-maker
+MAIN_CLI_NAME		:= starmaker
 REQUIREMENTS_FILE	:= development.txt
 
 PACKAGE_PATH		:= $(GIT_ROOT)/$(PACKAGE_NAME)
