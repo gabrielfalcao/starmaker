@@ -55,6 +55,8 @@ class SSHConfig(object):
     )
 
     def __init__(self, ssh_config_path: Path):
+        self.keys = paramiko.hostkeys.HostKeys()
+
         if not isinstance(ssh_config_path, Path):
             raise TypeError(f'{ssh_config_path} is not a pathlib.Path')
 
@@ -78,9 +80,18 @@ class SSHConfig(object):
         path = Path("~/.ssh/config").expanduser()
         return cls(path)
 
-    def resolve_host(self, name: str) -> Optional[HostConfig]:
+    def resolve_host(
+        self, name: str, interactive: bool = False
+    ) -> Optional[HostConfig]:
         hconfig = self.conf.lookup(name)
-        return HostConfig.from_paramiko_ssh_config_dict(name, hconfig)
+        hconfig = HostConfig.from_paramiko_ssh_config_dict(name, hconfig)
+        (kname, ktype, ppkey) = self.load_key(
+            hconfig.id_file,
+            interactive=interactive
+        )
+        self.keys.add(hconfig.host_ip, f"ssh-{ktype}", ppkey)
+
+        return hconfig
 
     def load_key(self, key_filename: Path, interactive: bool = False):
         for (kname, ktype) in self.__key_classes_by_type_name__:
@@ -90,12 +101,12 @@ class SSHConfig(object):
                     keypass = REPLUI(interactive).get_keypass(key_filename)
 
                 try:
-                    pkey = ktype.from_private_key_file(key_filename, keypass)
+                    ppkey = ktype.from_private_key_file(key_filename, keypass)
                 except paramiko.PasswordRequiredException:
                     raise REPLUI(interactive).error_password_required(
                         key_filename)
 
-                return pkey
+                return (kname, ktype, ppkey)
 
         raise InvalidKey(f'Failed to load private key: {key_filename}')
 
@@ -103,7 +114,7 @@ class SSHConfig(object):
         for (kname, ktype) in self.__key_classes_by_type_name__:
             possible_name = Path(f'~/.ssh/id_{kname}').expanduser()
             if possible_name.is_file():
-                yield (kname, ktype, self.load_key(possible_name))
+                yield self.load_key(possible_name)
 
     def get_any_available_key(self):
         for key in self.yield_any_available_key():

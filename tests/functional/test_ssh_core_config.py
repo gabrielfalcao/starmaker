@@ -22,5 +22,5 @@ def test_client_connect_id_ed25519():
     key.should_not.be.none
     key.should.be.an(Ed25519Key)
 
-    conn = c.connect('we-like-to-work')
-    import ipdb;ipdb.set_trace()
+    conn = c.establish_sftp('we-like-to-work')
+    conn.should_not.be.none

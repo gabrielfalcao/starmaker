@@ -4,6 +4,7 @@ import paramiko
 from typing import Optional
 from collections import OrderedDict
 from starmaker.ssh.core import SSHConfig
+from starmaker.ssh.models import HostConfig
 
 
 class EngineError(Exception):
@@ -24,18 +25,18 @@ class SSHClient(object):
         self.config = config or SSHConfig.default()
         self.sftp = OrderedDict()
 
-    def load_keys(self):
-        keys = []
-        keys = self.client.load_system_host_keys()
-        return keys
+    def load_keys(self, hconfig: HostConfig):
+        # XXX: load self.keys from keys of resolved hostconfig
+        return self.client.load_system_host_keys(hconfig.id_file)
 
     def connect(self, host_name, config: Optional[SSHConfig] = None):
         if not config:
             config = self.config
 
         hconfig = config.resolve_host(host_name)
+        self.load_keys(hconfig)
         try:
-            self.client.connect(
+            return self.client.connect(
                 hconfig.host_ip,
                 username=hconfig.user,
                 pkey=hconfig.id_file,
@@ -49,11 +50,11 @@ class SSHClient(object):
 
     def establish_sftp(self, host_name, config: Optional[SSHConfig] = None):
         conn = self.connect(host_name, config)
-        import ipdb;ipdb.set_trace()
         sftp = self.sftp.get(host_name)
         if sftp is not None:
             raise SFTPSessionAlreadyEstablished(sftp)
 
+        import ipdb;ipdb.set_trace()
         sftp = self.client.open_sftp()
         self.sftp[host_name] = sftp
         # sftp.get(remote_path, local_path)
