@@ -25,6 +25,7 @@ class SSHClient(object):
         self.sftp = OrderedDict()
 
     def load_keys(self):
+        keys = []
         keys = self.client.load_system_host_keys()
         return keys
 
@@ -33,14 +34,18 @@ class SSHClient(object):
             config = self.config
 
         hconfig = config.resolve_host(host_name)
-        return self.client.connect(
-            hconfig.host_ip,
-            port=hconfig.port,
-            username=hconfig.user,
-            pkey=hconfig.pkey,
-            sock=hconfig.proxy,
-            look_for_keys=False,
-        )
+        try:
+            self.client.connect(
+                hconfig.host_ip,
+                username=hconfig.user,
+                pkey=hconfig.id_file,
+                sock=hconfig.proxy_cmd,
+                look_for_keys=False,
+            )
+        except Exception as e:
+            err = e
+            import ipdb;ipdb.set_trace()
+            raise
 
     def establish_sftp(self, host_name, config: Optional[SSHConfig] = None):
         conn = self.connect(host_name, config)

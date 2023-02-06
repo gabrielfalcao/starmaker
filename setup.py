@@ -44,7 +44,7 @@ setup(
     long_description=local_file("README.rst"),
     entry_points={"console_scripts": [
         f"{PACKAGE_NAME} = {MODULE_NAME}.cli:main",
-        f"cosmicray = {MODULE_NAME}.cli:srsync",
+        f"cosmicray = {MODULE_NAME}.ssh.cli:main",
     ]},
     packages=find_packages(exclude=["*tests*"]),
     include_package_data=True,

@@ -5,30 +5,17 @@ from typing import Optional, Callable
 from pathlib import Path
 
 from starmaker.ssh.models import HostConfig
+from starmaker.ssh.models import (
+    ConfigError,
+    StarmakerSSHError,
+    InvalidREPLCallback,
+    InvalidKey,
+    RequiresInteractive,
+)
 
 
 def resolve_key_path(key_filename: Path) -> Path:
     return key_filename.expanduser().relative_to(Path("~").expanduser())
-
-
-class ConfigError(IOError):
-    """base exception for config-related stuff"""
-
-
-class InvalidKey(IOError):
-    """base exception for key-related stuff"""
-
-
-class PrivateKeyFileDoesNotExist(InvalidKey):
-    """raised when no SSH key private file exists (as a file)"""
-
-
-class RequiresInteractive(InvalidKey):
-    """raised when key requires password but interactive is ``False``"""
-
-
-class InvalidREPLCallback(InvalidKey, ConfigError):
-    """raised when a ``repl_getpass_callback`` arg is not callable"""
 
 
 class SSHConfigTranslator(object):
@@ -37,12 +24,15 @@ class SSHConfigTranslator(object):
 
 
 class REPLUI(object):
-    def __init__(self, interactive: bool = False, repl_getpass_callback: Callable):
+    def __init__(
+        self, interactive: bool = False,
+        repl_getpass_callback: Callable = None
+    ):
         if not callable(repl_getpass_callback):
             raise InvalidREPLCallback(
                 f'{repl_getpass_callback} is not callable')
 
-        self.repl_getpass_callback = repl_getpass_callback
+        self.repl_getpass_callback = repl_getpass_callback or getpass.getpass
         self.interactive = interactive
 
     def get_keypass(self, key_filename: Path) -> Optional[str]:
@@ -81,7 +71,6 @@ class SSHConfig(object):
             self.conf.parse(fd)
 
         self.config_path = ssh_config_path
-        self.interactive_callback = getpass.getpass
         self.path = ssh_config_path.parent
 
     @classmethod
@@ -91,14 +80,14 @@ class SSHConfig(object):
 
     def resolve_host(self, name: str) -> Optional[HostConfig]:
         hconfig = self.conf.lookup(name)
-        return HostConfig.from_paramiko_ssh_config_dict(hconfig)
+        return HostConfig.from_paramiko_ssh_config_dict(name, hconfig)
 
     def load_key(self, key_filename: Path, interactive: bool = False):
         for (kname, ktype) in self.__key_classes_by_type_name__:
             keypass = None
             if kname in key_filename.name:
                 if interactive:
-                    keypass = REPLUI(self.interactive_callback, interactive).get_keypass(key_filename)
+                    keypass = REPLUI(interactive).get_keypass(key_filename)
 
                 try:
                     pkey = ktype.from_private_key_file(key_filename, keypass)
@@ -112,11 +101,12 @@ class SSHConfig(object):
 
     def yield_any_available_key(self):
         for (kname, ktype) in self.__key_classes_by_type_name__:
-            possible_name = Path(f'~/.ssh/id_{kname}')
+            possible_name = Path(f'~/.ssh/id_{kname}').expanduser()
             if possible_name.is_file():
-                yield self.load_key(possible_name)
+                yield (kname, ktype, self.load_key(possible_name))
 
     def get_any_available_key(self):
         for key in self.yield_any_available_key():
             if key:
-                return key
+                kname, ktype, pkey = key
+                return pkey

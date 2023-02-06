@@ -47,7 +47,7 @@ unit: | $(VENV)/bin/nosetests $(MAIN_CLI_PATH)  # runs only unit tests
 
 # -> functional tests
 functional:| $(VENV)/bin/nosetests  $(MAIN_CLI_PATH)  # runs functional tests
-	@$(VENV)/bin/nosetests tests/functional
+	@$(VENV)/bin/nosetests --cover-xml tests/functional
 
 # run main command-line tool
 run: | $(MAIN_CLI_PATH)

@@ -15,23 +15,48 @@ KEY_CLASSES_BY_TYPE_NAME = (
 )
 
 
-class PrivateKeyFileDoesNotExist(Exception):
+class SSSHError(RuntimeError, IOError):
+    """:py:class:``starmaker.ssh.models.StarmakerSSHError``"""
+
+
+StarmakerSSHError = SSSHError
+
+
+class ConfigError(StarmakerSSHError):
+    """base exception for config-related stuff"""
+
+
+class InvalidKey(StarmakerSSHError):
+    """base exception for key-related stuff"""
+
+
+class PrivateKeyFileDoesNotExist(InvalidKey):
     """raised when no SSH key private file exists (as a file)"""
+
+
+class RequiresInteractive(InvalidKey):
+    """raised when key requires password but interactive is ``False``"""
+
+
+class InvalidREPLCallback(InvalidKey, ConfigError):
+    """raised when a ``repl_getpass_callback`` arg is not callable"""
 
 
 HostConfig = NewType("HConfig", Model)
 
 
 class HostConfig(Model):
-    host_ip: str
-    port: int
-    user: str
+
+    name: str
     id_file: Path
+    host_ip: str
+    user: Optional[str]
+    port: Optional[int]
     proxy_cmd: Optional[paramiko.ProxyCommand]
 
     @classmethod
     def from_paramiko_ssh_config_dict(
-        cls, hconfig: paramiko.config.SSHConfigDict
+            cls, name: str, hconfig: paramiko.config.SSHConfigDict
     ) -> Optional[HostConfig]:
         hostname = hconfig.pop("hostname", None)
 
@@ -39,6 +64,7 @@ class HostConfig(Model):
             return None
 
         kwargs = OrderedDict()
+        kwargs["name"] = name
         kwargs["host_ip"] = hostname
 
         if "port" in hconfig:
