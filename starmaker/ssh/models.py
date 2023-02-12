@@ -58,10 +58,10 @@ class HostConfig(Model):
     def from_paramiko_ssh_config_dict(
             cls, name: str, hconfig: paramiko.config.SSHConfigDict
     ) -> Optional[HostConfig]:
-        hostname = hconfig.pop("hostname", None)
+        hostname = hconfig.pop("hostname", name)
 
-        if not hostname or len(hconfig) == 1:
-            return None
+        # if not hostname or len(hconfig) == 1:
+        #     return None
 
         kwargs = OrderedDict()
         kwargs["name"] = name

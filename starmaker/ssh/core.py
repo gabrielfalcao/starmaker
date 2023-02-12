@@ -84,7 +84,9 @@ class SSHConfig(object):
         self, name: str, interactive: bool = False
     ) -> Optional[HostConfig]:
         hconfig = self.conf.lookup(name)
+        name = hconfig.pop('name', name)
         hconfig = HostConfig.from_paramiko_ssh_config_dict(name, hconfig)
+
         (kname, ktype, ppkey) = self.load_key(
             hconfig.id_file,
             interactive=interactive
@@ -96,7 +98,7 @@ class SSHConfig(object):
     def load_key(self, key_filename: Path, interactive: bool = False):
         for (kname, ktype) in self.__key_classes_by_type_name__:
             keypass = None
-            if kname in key_filename.name:
+            if key_filename and kname in key_filename.name:
                 if interactive:
                     keypass = REPLUI(interactive).get_keypass(key_filename)
 

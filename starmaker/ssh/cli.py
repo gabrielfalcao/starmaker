@@ -9,6 +9,7 @@ from starmaker.ssh.core import SSHConfig
 from starmaker.ssh.models import HostConfig
 from starmaker.ssh.models import StarmakerSSHError
 from starmaker.ssh.engine import SSHClient
+from starmaker.ssh.engine import SFTP
 
 
 def here() -> Path:
@@ -35,9 +36,6 @@ def conf(ctx, host_name):
     path = Path("~/.ssh/config").expanduser()
     sshconf = SSHConfig(path)
     hconfig = sshconf.resolve_host(host_name)
-    import ipdb
-
-    ipdb.set_trace()
 
 
 @main.command()
@@ -47,8 +45,10 @@ def conf(ctx, host_name):
 def client(ctx, host_name, meta_args):
     path = Path("~/.ssh/config").expanduser()
     config = SSHConfig(path)
+
+    hconfig = config.resolve_host(host_name)
     ssh = SSHClient(config)
-    keys = ssh.load_keys()
+    keys = ssh.load_keys(hconfig)
 
     sftp = ssh.establish_sftp(host_name, config=config)
     import ipdb;ipdb.set_trace()

@@ -1,6 +1,6 @@
 import click
 import jinja2
-from starmaker.terraform import GCPBootstrapper
+# from starmaker.ssh import SFTP
 
 
 @click.group()

@@ -7,6 +7,72 @@ from starmaker.ssh.core import SSHConfig
 from starmaker.ssh.models import HostConfig
 
 
+class SFTP(object):
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+        self.authentication_errors = []
+        self._connection = None
+        self._sftp = None
+
+    @property
+    def connection(self):
+        return self.get_connection()
+
+    def get_connection(self):
+        if not self._connection:
+            self._connection = self.connect()
+
+        return self._connection
+
+    @property
+    def sftp(self):
+        return self.get_sftp()
+
+    def get_sftp(self):
+        if not self._sftp:
+            self._sftp = paramiko.SFTPClient.from_transport(
+                self.connection
+            )
+
+        return self._sftp
+
+    def authenticate_transport(self, transport):
+        transport.start_client()
+        agent = paramiko.Agent()
+        for key in agent.get_keys():
+            try:
+                transport.auth_publickey(self.user, key)
+            except paramiko.SSHException as e:
+                self.authentication_errors.append(e)
+
+        return transport
+
+    def create_transport(self, transport):
+        transport = paramiko.Transport((self.host, int(self.port)))
+        return transport
+
+    def connect(self):
+        t = self.create_transport()
+        return self.authenticate_transport(t)
+
+    def put(self, fd, destination):
+        self.sftp.chdir(path=None)
+        attributes = sftp.putfo(fd, destination, confirm=True)
+        success = fd.tell() == attributes.st_size
+        return success
+
+    def get(self, fd, destination):
+        # getfo(remotepath, fl, callback=None, prefetch=True)
+        attributes = sftp.putfo(fd, destination, confirm=True)
+        success = fd.tell() == attributes.st_size
+        return success
+
+    def ls(self, path='.'):
+        items = self.sftp.list(path)
+        return items
+
+
 class EngineError(Exception):
     """raised by elements of :py:mod:``starmaker.ssh.engine``"""
 
@@ -45,7 +111,6 @@ class SSHClient(object):
             )
         except Exception as e:
             err = e
-            import ipdb;ipdb.set_trace()
             raise
 
     def establish_sftp(self, host_name, config: Optional[SSHConfig] = None):
@@ -54,7 +119,6 @@ class SSHClient(object):
         if sftp is not None:
             raise SFTPSessionAlreadyEstablished(sftp)
 
-        import ipdb;ipdb.set_trace()
         sftp = self.client.open_sftp()
         self.sftp[host_name] = sftp
         # sftp.get(remote_path, local_path)
