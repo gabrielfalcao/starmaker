@@ -9,17 +9,12 @@ from starmaker.ssh.core import SSHConfig
 from starmaker.ssh.models import HostConfig
 from starmaker.ssh.models import StarmakerSSHError
 from starmaker.ssh.engine import SSHClient
-from starmaker.ssh.engine import SFTP
+from starmaker.ssh.ep import get_ssh_hosts_from_config
+from starmaker.logging import get_logger
 
 
 def here() -> Path:
     return Path(os.getcwd()).absolute()
-
-
-def get_logger():
-    logger = logging.getLogger(__name__)
-    logger.addHandler(logging.NullHandler())
-    return logger
 
 
 @click.group()
@@ -38,42 +33,57 @@ def conf(ctx, host_name):
     hconfig = sshconf.resolve_host(host_name)
 
 
+# @main.command()
+# @click.argument("host-name")
+# @click.argument("meta-args", nargs=-1)
+# @click.pass_context
+# def client(ctx, host_name, meta_args):
+#     path = Path("~/.ssh/config").expanduser()
+#     config = SSHConfig(path)
+#
+#     hconfig = config.resolve_host(host_name)
+#     ssh = SSHClient(config)
+#     keys = ssh.load_keys(hconfig)
+#
+#     sftp = ssh.establish_sftp(host_name, config=config)
+
+
 @main.command()
-@click.argument("host-name")
-@click.argument("meta-args", nargs=-1)
+@click.argument("source")
+@click.argument("destination")
 @click.pass_context
-def client(ctx, host_name, meta_args):
+def sync(ctx, source, destination):
+    host_name, remote_path = destination.split(':', 1)
+
     path = Path("~/.ssh/config").expanduser()
     config = SSHConfig(path)
 
     hconfig = config.resolve_host(host_name)
+    loaded = config.load_key(hconfig.id_file, interactive=False)
+
     ssh = SSHClient(config)
     keys = ssh.load_keys(hconfig)
-
     sftp = ssh.establish_sftp(host_name, config=config)
-    import ipdb;ipdb.set_trace()
 
 
-@main.command()
+
+@main.group('list')
 @click.pass_context
 def list(ctx):
-    path = Path("~/.ssh/config").expanduser()
-    config = SSHConfig(path)
-    hosts = []
+    pass
 
-    logger = get_logger()
 
-    for host_name in config.conf.get_hostnames():
-        try:
-            resolved = config.resolve_host(host_name)
-            hosts.append(resolved)
+# https://gist.githubusercontent.com/gabrielfalcao/575927980e0ecdc72d483b6d69daf8ec/raw/7fffe0b4c2aae88aa7eaeaf7c73034e5cebc0108/brew.sh
+@list.command()
+@click.pass_context
+def hosts(ctx):
+    host_config_list: HostConfig.List = get_ssh_hosts_from_config()
+    print(host_config_list.format_pretty_table())
 
-        except StarmakerSSHError as e:
-            logger.exception(f"failed to resolve host {host_name}: {e}")
 
-    hosts = HostConfig.List(filter(lambda x: bool(x) and x.name != '*', hosts))
-    print(hosts.format_pretty_table())
 
+
+    # https://gist.githubusercontent.com/gabrielfalcao/575927980e0ecdc72d483b6d69daf8ec/raw/7fffe0b4c2aae88aa7eaeaf7c73034e5cebc0108/brew.sh
 
 if __name__ == "__main__":
     main()

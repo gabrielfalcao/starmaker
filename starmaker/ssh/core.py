@@ -92,7 +92,6 @@ class SSHConfig(object):
             interactive=interactive
         )
         self.keys.add(hconfig.host_ip, f"ssh-{ktype}", ppkey)
-
         return hconfig
 
     def load_key(self, key_filename: Path, interactive: bool = False):

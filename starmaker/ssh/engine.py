@@ -92,8 +92,9 @@ class SSHClient(object):
         self.sftp = OrderedDict()
 
     def load_keys(self, hconfig: HostConfig):
-        # XXX: load self.keys from keys of resolved hostconfig
-        return self.client.load_system_host_keys(hconfig.id_file)
+        self.client.load_system_host_keys(hconfig.id_file)
+        hk = self.client.get_host_keys()
+        self.client.get_hostnames()
 
     def connect(self, host_name, config: Optional[SSHConfig] = None):
         if not config:
